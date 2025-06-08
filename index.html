@@ -2,67 +2,64 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (اجازه دسترسی)</title>
+    <title>تابلو زنده (نسخه نهایی پایدار)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body { margin: 0; }
-        
-        .before-start {
+        /* استایل‌های اصلی صفحه */
+        body {
+            margin: 0;
+        }
+
+        /* --- حالت قبل از شروع AR --- */
+        body.before-start {
+            /* نمایش عکس پس‌زمینه */
             background-image: url('./zima.jpg');
             background-size: cover;
+            background-repeat: no-repeat;
             background-position: center;
+            /* وسط‌چین کردن دکمه */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
-        .before-start #ar-scene { display: none; }
-        body:not(.before-start) #start-button { display: none; }
-        
-        #start-button {
-            padding: 15px 30px; font-size: 24px; font-family: sans-serif; font-weight: bold;
-            color: white; background-color: rgba(0, 0, 0, 0.6); border: none;
-            border-radius: 50px; cursor: pointer; z-index: 10000;
+        /* در حالت قبل از شروع، صحنه AR کاملا مخفی است */
+        .before-start #ar-scene {
+            display: none;
         }
 
-        /* استایل کادر پیام اجازه دسترسی */
-        #permission-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 20000;
-        }
-        .modal-content {
-            background-color: white; padding: 25px; border-radius: 15px;
-            text-align: center; font-family: sans-serif; max-width: 300px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        }
-        .modal-content h3 { margin-top: 0; }
-        .modal-content button {
-            margin-top: 15px; padding: 10px 20px; font-size: 16px;
-            background-color: #007bff; color: white; border: none;
-            border-radius: 8px; cursor: pointer; width: 100%;
+        /* --- حالت حین اجرای AR --- */
+        /* وقتی AR فعال است، دکمه شروع مخفی می‌شود */
+        body:not(.before-start) #start-button {
+            display: none;
         }
         
-        .hidden { display: none !important; }
+        /* استایل دکمه شروع */
+        #start-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-family: sans-serif;
+            font-weight: bold;
+            color: white;
+            background-color: rgba(255, 140, 0, 0.85); /* نارنجی */
+            border: none;
+            border-radius: 8px; /* مستطیلی با گوشه‌های گرد */
+            cursor: pointer;
+            z-index: 10000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
     </style>
 </head>
 <body class="before-start">
 
-    <button id="start-button">بزن بریم</button>
-
-    <div id="permission-modal" class="hidden">
-        <div class="modal-content">
-            <h3>دسترسی به دوربین</h3>
-            <p>برای اینکه تابلوی شما زنده بشه و بتونیم ویدیو رو روی عکس نمایش بدیم، نیاز به اجازه دسترسی به دوربین شما داریم.</p>
-            <button id="grant-permission-button">باشه، ادامه میدم</button>
-        </div>
-    </div>
+    <button id="start-button">عکس رو جلو دوربین گوشیت بگیر</button>
 
     <a-assets>
         <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
     </a-assets>
+
     <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
@@ -73,33 +70,28 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const startButton = document.querySelector("#start-button");
-            const permissionModal = document.querySelector("#permission-modal");
-            const grantPermissionButton = document.querySelector("#grant-permission-button");
             const sceneEl = document.querySelector("#ar-scene");
             const arVideo = document.querySelector("#ar-video");
             const arVideoPlane = document.querySelector("#ar-video-plane");
             const targetEntity = document.querySelector("#target-entity");
             const bodyEl = document.querySelector("body");
 
-            // --- تشخیص ابعاد ویدیو ---
+            // --- تشخیص خودکار ابعاد ویدیو ---
             arVideo.addEventListener('loadedmetadata', () => {
                 const w = arVideo.videoWidth;
                 const h = arVideo.videoHeight;
                 arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
             });
 
-            // --- نمایش پیام اجازه دسترسی ---
+            // --- منطق اصلی: شروع با کلیک روی دکمه ---
             startButton.addEventListener('click', () => {
-                permissionModal.classList.remove('hidden');
-            });
-
-            // --- شروع AR پس از تایید کاربر ---
-            grantPermissionButton.addEventListener('click', () => {
-                permissionModal.classList.add('hidden');
-                
+                // 1. سیستم AR را فعال کن
                 sceneEl.systems['mindar-image-system'].start();
+                
+                // 2. حالت صفحه را از "قبل از شروع" خارج کن. CSS بقیه کارها را می‌کند.
                 bodyEl.classList.remove('before-start');
                 
+                // 3. باز کردن قفل صدا
                 arVideo.muted = false;
                 arVideo.play();
                 arVideo.pause();
@@ -107,8 +99,12 @@
             });
 
             // --- کنترل پخش ویدیو در AR ---
-            targetEntity.addEventListener("targetFound", () => arVideo.play());
-            targetEntity.addEventListener("targetLost", () => arVideo.pause());
+            targetEntity.addEventListener("targetFound", () => {
+                arVideo.play();
+            });
+            targetEntity.addEventListener("targetLost", () => {
+                arVideo.pause();
+            });
         });
     </script>
 </body>
