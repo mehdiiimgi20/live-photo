@@ -30,13 +30,10 @@
             display: none;
         }
         
-        /* استایل دکمه شروع جدید و جذاب */
+        /* استایل دکمه شروع */
         #start-button {
-            display: flex;
-            flex-direction: column; /* چیدن آیکون و متن زیر هم */
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            padding: 20px 35px;
+            font-size: 18px;
             font-family: sans-serif;
             font-weight: bold;
             color: white;
@@ -47,16 +44,10 @@
             z-index: 10000;
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
             text-align: center;
+            line-height: 1.5; /* فاصله بین خطوط متن */
             max-width: 80%;
             /* انیمیشن تپنده برای جلب توجه */
             animation: pulse 2s infinite;
-        }
-        
-        /* استایل آیکون دوربین داخل دکمه */
-        #start-button svg {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 10px;
         }
 
         /* تعریف انیمیشن تپنده */
@@ -79,13 +70,7 @@
 </head>
 <body class="before-start">
 
-    <div id="start-button">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-            <path d="M0 0h24v24H0z" fill="none"/>
-            <path d="M12 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 4h4v-1.09c-1.12-.22-2.16-.76-3-1.47L8 17.17V15zm12-6c0-1.1-.9-2-2-2h-1.05c-.27-1.21-1-2.26-2.05-2.87l.95-.95c.39-.39.39-1.02 0-1.41l-.71-.71c-.39-.39-1.02-.39-1.41 0l-.95.95C13.26 3.1 12.21 3 11 3H9c-1.1 0-2 .9-2 2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10zm-2 9H6V10h2v.5c0 .28.22.5.5.5s.5-.22.5-.5V10h5v.5c0 .28.22.5.5.5s.5-.22.5-.5V10h2v9z"/>
-        </svg>
-        <span>بزن بریم!<br>عکس رو جلو دوربین بگیر</span>
-    </div>
+    <button id="start-button">قاب عکست رو جلوی دوربین بگیر</button>
 
     <a-assets>
         <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
