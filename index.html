@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه پایDار)</title>
+    <title>تابلو زنده (نسخه پایدار نهایی)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -24,34 +24,43 @@
             cursor: pointer;
             z-index: 10001;
         }
-        
-        .hidden { display: none !important; }
 
-        video#myVideo.fullscreen-active {
+        #fullscreen-container {
             position: fixed;
             top: 0;
             left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #fullscreen-container video {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            background: black;
-            z-index: 10000;
         }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
     <button id="start-button">شروع</button>
     <button id="fullscreen-button" class="hidden">تمام صفحه</button>
 
+    <div id="fullscreen-container" class="hidden"></div>
+
     <a-assets>
-        <video id="myVideo" src="./video.mp4" loop="false" playsinline webkit-playsinline></video>
+        <video id="ar-video" src="./video.mp4" loop muted playsinline webkit-playsinline></video>
     </a-assets>
 
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false; uiScanning: #scanning-ui" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-        <a-entity id="scanning-ui" mindar-ui-scanning="target: #target-entity"></a-entity>
-        <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-            <a-video id="ar-video-plane" src="#myVideo" rotation="0 0 0" position="0 0 0"></a-video>
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
@@ -59,60 +68,67 @@
         document.addEventListener('DOMContentLoaded', () => {
             const startButton = document.querySelector("#start-button");
             const fullscreenButton = document.querySelector("#fullscreen-button");
+            const fullscreenContainer = document.querySelector("#fullscreen-container");
             const sceneEl = document.querySelector("#ar-scene");
-            const video = document.querySelector("#myVideo");
-            const videoPlane = document.querySelector("#ar-video-plane");
+            const arVideo = document.querySelector("#ar-video");
+            const arVideoPlane = document.querySelector("#ar-video-plane");
 
             let isArMode = true;
+            let fullscreenVideo = null; // متغیری برای نگهداری ویدیوی کپی شده
 
-            // --- بخش هوشمند: تشخیص خودکار ابعاد ویدیو ---
-            video.addEventListener('loadedmetadata', () => {
-                const videoWidth = video.videoWidth;
-                const videoHeight = video.videoHeight;
-                let scaleX = (videoWidth >= videoHeight) ? 1 : videoWidth / videoHeight;
-                let scaleY = (videoWidth >= videoHeight) ? videoHeight / videoWidth : 1;
-                videoPlane.setAttribute('scale', `${scaleX} ${scaleY} 1`);
+            // --- تشخیص خودکار ابعاد ویدیو برای حالت AR ---
+            arVideo.addEventListener('loadedmetadata', () => {
+                const w = arVideo.videoWidth;
+                const h = arVideo.videoHeight;
+                arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
             });
 
-            // --- کنترل شروع AR ---
+            // --- شروع AR ---
             startButton.addEventListener('click', () => {
                 sceneEl.systems['mindar-image-system'].start();
                 startButton.classList.add('hidden');
                 fullscreenButton.classList.remove('hidden');
-                
-                video.muted = false;
-                video.play();
-                video.pause();
-                video.currentTime = 0;
             });
 
-            // --- کنترل پخش ویدیو در AR (نسخه اصلاح شده و ساده) ---
-            // با پیدا شدن نشانگر، ویدیو همیشه پخش می‌شود
-            targetEntity.addEventListener("targetFound", () => {
-                video.play();
-            });
-            // با گم شدن نشانگر، ویدیو متوقف می‌شود
-            targetEntity.addEventListener("targetLost", () => {
-                video.pause();
+            // --- کنترل پخش در AR ---
+            sceneEl.addEventListener("arReady", () => {
+                const targetEntity = document.querySelector('[mindar-image-target]');
+                targetEntity.addEventListener("targetFound", () => arVideo.play());
+                targetEntity.addEventListener("targetLost", () => arVideo.pause());
             });
 
-            // --- کنترل حالت تمام صفحه با قابلیت تغییر متن دکمه ---
+            // --- کنترل حالت تمام صفحه ---
             fullscreenButton.addEventListener('click', () => {
-                const currentTime = video.currentTime;
+                const currentTime = arVideo.currentTime;
 
                 if (isArMode) {
-                    sceneEl.systems['mindar-image-system'].pause();
-                    video.classList.add('fullscreen-active');
-                    video.currentTime = currentTime;
-                    video.play();
+                    arVideo.pause();
+                    sceneEl.classList.add('hidden');
+                    fullscreenContainer.classList.remove('hidden');
+
+                    // اگر برای اولین بار است، یک کپی از ویدیو با صدا و کنترل می‌سازیم
+                    if (!fullscreenVideo) {
+                        fullscreenVideo = arVideo.cloneNode(true);
+                        fullscreenVideo.muted = false;
+                        fullscreenVideo.controls = true;
+                        fullscreenContainer.appendChild(fullscreenVideo);
+                    }
+                    
+                    fullscreenVideo.currentTime = currentTime;
+                    fullscreenVideo.play();
                     
                     fullscreenButton.textContent = "پخش واقعیت افزوده";
                     isArMode = false;
                 } else {
-                    video.classList.remove('fullscreen-active');
-                    sceneEl.systems['mindar-image-system'].resume();
-                    video.currentTime = currentTime;
-                    video.pause();
+                    if (fullscreenVideo) {
+                        fullscreenVideo.pause();
+                        arVideo.currentTime = fullscreenVideo.currentTime;
+                    }
+                    
+                    fullscreenContainer.classList.add('hidden');
+                    sceneEl.classList.remove('hidden');
+                    
+                    // اگر نشانگر دیده شود، ویدیوی AR به صورت خودکار پخش خواهد شد
                     
                     fullscreenButton.textContent = "تمام صفحه";
                     isArMode = true;
