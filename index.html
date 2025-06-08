@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه پایدار نهایی)</title>
+    <title>تابلو زنده (پخش با صدا در AR)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -54,7 +54,7 @@
     <div id="fullscreen-container" class="hidden"></div>
 
     <a-assets>
-        <video id="ar-video" src="./video.mp4" loop muted playsinline webkit-playsinline></video>
+        <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
     </a-assets>
 
     <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
@@ -74,20 +74,28 @@
             const arVideoPlane = document.querySelector("#ar-video-plane");
 
             let isArMode = true;
-            let fullscreenVideo = null; // متغیری برای نگهداری ویدیوی کپی شده
+            let fullscreenVideo = null;
 
-            // --- تشخیص خودکار ابعاد ویدیو برای حالت AR ---
+            // --- تشخیص خودکار ابعاد ویدیو ---
             arVideo.addEventListener('loadedmetadata', () => {
                 const w = arVideo.videoWidth;
                 const h = arVideo.videoHeight;
                 arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
             });
 
-            // --- شروع AR ---
+            // --- کنترل شروع AR و ترفند باز کردن قفل صدا ---
             startButton.addEventListener('click', () => {
                 sceneEl.systems['mindar-image-system'].start();
                 startButton.classList.add('hidden');
                 fullscreenButton.classList.remove('hidden');
+                
+                // === ترفند اصلی ===
+                // ما از این کلیک اولیه کاربر استفاده می‌کنیم تا به مرورگر بگوییم اجازه پخش صدا را داریم.
+                // ویدیو را از حالت بی‌صدا خارج کرده، یک لحظه پخش و بلافاصله متوقف می‌کنیم.
+                arVideo.muted = false;
+                arVideo.play();
+                arVideo.pause();
+                arVideo.currentTime = 0;
             });
 
             // --- کنترل پخش در AR ---
@@ -106,10 +114,8 @@
                     sceneEl.classList.add('hidden');
                     fullscreenContainer.classList.remove('hidden');
 
-                    // اگر برای اولین بار است، یک کپی از ویدیو با صدا و کنترل می‌سازیم
                     if (!fullscreenVideo) {
                         fullscreenVideo = arVideo.cloneNode(true);
-                        fullscreenVideo.muted = false;
                         fullscreenVideo.controls = true;
                         fullscreenContainer.appendChild(fullscreenVideo);
                     }
@@ -127,8 +133,6 @@
                     
                     fullscreenContainer.classList.add('hidden');
                     sceneEl.classList.remove('hidden');
-                    
-                    // اگر نشانگر دیده شود، ویدیوی AR به صورت خودکار پخش خواهد شد
                     
                     fullscreenButton.textContent = "تمام صفحه";
                     isArMode = true;
