@@ -2,28 +2,72 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده هوشمند</title>
+    <title>تابلو زنده با قابلیت تمام صفحه</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
         /* استایل‌های ظاهری */
         body { margin: 0; }
+
+        /* دکمه شروع اولیه */
         #start-button { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 24px; font-size: 18px; font-family: sans-serif; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 10000; }
-        #start-button.hidden { display: none; }
+        
+        /* دکمه جدید برای جابجایی بین حالت تمام صفحه و AR */
+        #fullscreen-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-family: sans-serif;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10000;
+        }
+
+        /* کانتینر برای نمایش ویدیو در حالت تمام صفحه */
+        #fullscreen-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* استایل ویدیو وقتی که تمام صفحه است */
+        #fullscreen-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* نسبت ابعاد ویدیو را حفظ می‌کند */
+        }
+        
+        /* کلاس کمکی برای مخفی کردن عناصر */
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
     <button id="start-button">شروع</button>
+    <button id="fullscreen-button" class="hidden">تمام صفحه</button>
 
-    <a-assets>
+    <div id="fullscreen-container" class="hidden"></div>
+
+    <a-assets id="ar-assets">
         <video id="myVideo" src="./video.mp4" loop="false" playsinline webkit-playsinline></video>
     </a-assets>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false; uiScanning: #scanning-ui" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
-        
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false; uiScanning: #scanning-ui" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="scanning-ui" mindar-ui-scanning="target: #target-entity"></a-entity>
-
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
             <a-video id="ar-video-plane" src="#myVideo" rotation="0 0 0" position="0 0 0"></a-video>
         </a-entity>
@@ -31,40 +75,31 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // پیدا کردن تمام عناصر لازم
             const startButton = document.querySelector("#start-button");
-            const sceneEl = document.querySelector('a-scene');
+            const fullscreenButton = document.querySelector("#fullscreen-button");
+            const fullscreenContainer = document.querySelector("#fullscreen-container");
+            const assetsEl = document.querySelector("#ar-assets");
+            const sceneEl = document.querySelector("#ar-scene");
             const video = document.querySelector("#myVideo");
-            const targetEntity = document.querySelector("#target-entity");
-            const videoPlane = document.querySelector("#ar-video-plane"); // پیدا کردن صفحه نمایش ویدیو
+            const videoPlane = document.querySelector("#ar-video-plane");
 
-            // ==========================================================
-            // === بخش هوشمند: تشخیص خودکار ابعاد ویدیو ===
-            // ==========================================================
+            let isArMode = true; // متغیر برای نگهداری حالت فعلی
+
+            // --- بخش هوشمند: تشخیص خودکار ابعاد ویدیو ---
             video.addEventListener('loadedmetadata', () => {
                 const videoWidth = video.videoWidth;
                 const videoHeight = video.videoHeight;
-                let scaleX, scaleY;
-
-                // اگر ویدیو افقی یا مربع باشد
-                if (videoWidth >= videoHeight) {
-                    scaleX = 1;
-                    scaleY = videoHeight / videoWidth;
-                } 
-                // اگر ویدیو عمودی باشد
-                else {
-                    scaleY = 1;
-                    scaleX = videoWidth / videoHeight;
-                }
-                
-                // تنظیم خودکار اندازه صفحه ویدیو در AR
+                let scaleX = (videoWidth >= videoHeight) ? 1 : videoWidth / videoHeight;
+                let scaleY = (videoWidth >= videoHeight) ? videoHeight / videoWidth : 1;
                 videoPlane.setAttribute('scale', `${scaleX} ${scaleY} 1`);
             });
 
-            // کنترل صدا و شروع AR
+            // --- کنترل شروع AR ---
             startButton.addEventListener('click', () => {
-                const mindarSystem = sceneEl.systems['mindar-image-system'];
-                mindarSystem.start();
+                sceneEl.systems['mindar-image-system'].start();
                 startButton.classList.add('hidden');
+                fullscreenButton.classList.remove('hidden'); // نمایش دکمه تمام صفحه
                 
                 video.muted = false;
                 video.play();
@@ -72,14 +107,47 @@
                 video.currentTime = 0;
             });
 
-            // کنترل پخش ویدیو با پیدا شدن/گم شدن نشانگر
-            targetEntity.addEventListener("targetFound", event => {
-                video.play();
-            });
+            // --- کنترل پخش ویدیو در AR ---
+            targetEntity.addEventListener("targetFound", () => video.play());
+            targetEntity.addEventListener("targetLost", () => video.pause());
 
-            targetEntity.addEventListener("targetLost", event => {
-                video.pause();
-                video.currentTime = 0;
+            // ==========================================================
+            // === بخش جدید: کنترل حالت تمام صفحه ===
+            // ==========================================================
+            fullscreenButton.addEventListener('click', () => {
+                const currentTime = video.currentTime; // زمان فعلی ویدیو را ذخیره می‌کنیم
+
+                // اگر در حالت AR هستیم و می‌خواهیم تمام صفحه شویم
+                if (isArMode) {
+                    sceneEl.systems['mindar-image-system'].pause(true); // سیستم AR را موقتا متوقف می‌کنیم
+                    sceneEl.classList.add('hidden'); // صحنه AR را مخفی می‌کنیم
+
+                    // ویدیو را از بخش assets به کانتینر تمام صفحه منتقل می‌کنیم
+                    fullscreenContainer.appendChild(video);
+                    fullscreenContainer.classList.remove('hidden'); // کانتینر را نمایش می‌دهیم
+
+                    video.currentTime = currentTime; // زمان ویدیو را تنظیم می‌کنیم
+                    video.play();
+
+                    fullscreenButton.textContent = "بازگشت به AR"; // متن دکمه را تغییر می‌دهیم
+                    isArMode = false; // حالت را آپدیت می‌کنیم
+                } 
+                // اگر در حالت تمام صفحه هستیم و می‌خواهیم به AR برگردیم
+                else {
+                    video.pause();
+                    fullscreenContainer.classList.add('hidden'); // کانتینر تمام صفحه را مخفی می‌کنیم
+                    
+                    // ویدیو را به بخش assets برمی‌گردانیم
+                    assetsEl.appendChild(video);
+                    
+                    sceneEl.classList.remove('hidden'); // صحنه AR را نمایش می‌دهیم
+                    sceneEl.systems['mindar-image-system'].resume(); // سیستم AR را دوباره فعال می‌کنیم
+
+                    video.currentTime = currentTime; // زمان ویدیو را تنظیم می‌کنیم
+                    
+                    fullscreenButton.textContent = "تمام صفحه"; // متن دکمه را به حالت اول برمی‌گردانیم
+                    isArMode = true; // حالت را آپدیت می‌کنیم
+                }
             });
         });
     </script>
