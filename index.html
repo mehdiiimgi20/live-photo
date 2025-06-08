@@ -73,7 +73,6 @@
             const sceneEl = document.querySelector("#ar-scene");
             const arVideo = document.querySelector("#ar-video");
             const arVideoPlane = document.querySelector("#ar-video-plane");
-            const targetEntity = document.querySelector("#target-entity");
             const bodyEl = document.querySelector("body");
 
             // --- تشخیص خودکار ابعاد ویدیو ---
@@ -85,25 +84,26 @@
 
             // --- منطق اصلی: شروع با کلیک روی دکمه ---
             startButton.addEventListener('click', () => {
-                // 1. سیستم AR را فعال کن
                 sceneEl.systems['mindar-image-system'].start();
-                
-                // 2. حالت صفحه را از "قبل از شروع" خارج کن. CSS بقیه کارها را می‌کند.
                 bodyEl.classList.remove('before-start');
                 
-                // 3. باز کردن قفل صدا
                 arVideo.muted = false;
                 arVideo.play();
                 arVideo.pause();
                 arVideo.currentTime = 0;
             });
 
-            // --- کنترل پخش ویدیو در AR ---
-            targetEntity.addEventListener("targetFound", () => {
-                arVideo.play();
-            });
-            targetEntity.addEventListener("targetLost", () => {
-                arVideo.pause();
+            // --- کنترل پخش ویدیو فقط پس از آماده شدن کامل سیستم AR ---
+            sceneEl.addEventListener("arReady", () => {
+                const targetEntity = document.querySelector("#target-entity");
+                
+                // حالا که سیستم آماده است، با اطمینان دستورات پخش را ثبت می‌کنیم
+                targetEntity.addEventListener("targetFound", () => {
+                    arVideo.play();
+                });
+                targetEntity.addEventListener("targetLost", () => {
+                    arVideo.pause();
+                });
             });
         });
     </script>
