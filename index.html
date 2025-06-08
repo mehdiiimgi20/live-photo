@@ -11,7 +11,7 @@
             margin: 0;
         }
 
-        /* --- حالت قبل از شروع AR (برای نمایش صحیح پس‌زمینه و دکمه) --- */
+        /* --- حالت قبل از شروع AR --- */
         body.before-start {
             background-image: url('./zima.jpg');
             background-size: cover;
@@ -21,44 +21,77 @@
             align-items: center;
             min-height: 100vh;
         }
-        /* در حالت قبل از شروع، صحنه AR کاملا مخفی است تا دکمه دیده شود */
         .before-start #ar-scene {
             display: none;
         }
 
         /* --- حالت حین اجرای AR --- */
-        /* وقتی AR فعال است، دکمه شروع مخفی می‌شود */
         body:not(.before-start) #start-button {
             display: none;
         }
         
-        /* استایل دکمه شروع */
+        /* استایل دکمه شروع جدید و جذاب */
         #start-button {
-            padding: 15px 30px;
-            font-size: 18px;
+            display: flex;
+            flex-direction: column; /* چیدن آیکون و متن زیر هم */
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
             font-family: sans-serif;
             font-weight: bold;
             color: white;
-            background-color: rgba(255, 140, 0, 0.85); /* نارنجی */
+            background-color: rgba(255, 140, 0, 0.9); /* نارنجی */
             border: none;
-            border-radius: 8px; /* مستطیلی با گوشه‌های گرد */
+            border-radius: 15px; /* مستطیلی با گوشه‌های گرد */
             cursor: pointer;
             z-index: 10000;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
             text-align: center;
             max-width: 80%;
+            /* انیمیشن تپنده برای جلب توجه */
+            animation: pulse 2s infinite;
         }
+        
+        /* استایل آیکون دوربین داخل دکمه */
+        #start-button svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 10px;
+        }
+
+        /* تعریف انیمیشن تپنده */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 8px 35px rgba(0, 0, 0, 0.4);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            }
+        }
+
     </style>
 </head>
 <body class="before-start">
 
-    <button id="start-button">قاب عکس رو مقابل دوربین گوشی نگه دار</button>
+    <div id="start-button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+            <path d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-2 4h4v-1.09c-1.12-.22-2.16-.76-3-1.47L8 17.17V15zm12-6c0-1.1-.9-2-2-2h-1.05c-.27-1.21-1-2.26-2.05-2.87l.95-.95c.39-.39.39-1.02 0-1.41l-.71-.71c-.39-.39-1.02-.39-1.41 0l-.95.95C13.26 3.1 12.21 3 11 3H9c-1.1 0-2 .9-2 2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10zm-2 9H6V10h2v.5c0 .28.22.5.5.5s.5-.22.5-.5V10h5v.5c0 .28.22.5.5.5s.5-.22.5-.5V10h2v9z"/>
+        </svg>
+        <span>بزن بریم!<br>عکس رو جلو دوربین بگیر</span>
+    </div>
 
     <a-assets>
         <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
     </a-assets>
 
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
+    <a-scene id="ar-scene" class="hidden" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
             <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
@@ -73,39 +106,26 @@
             const arVideoPlane = document.querySelector("#ar-video-plane");
             const bodyEl = document.querySelector("body");
 
-            // --- تشخیص خودکار ابعاد ویدیو ---
             arVideo.addEventListener('loadedmetadata', () => {
                 const w = arVideo.videoWidth;
                 const h = arVideo.videoHeight;
                 arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
             });
 
-            // --- منطق اصلی: شروع با کلیک روی دکمه ---
             startButton.addEventListener('click', () => {
-                // فعال کردن سیستم AR
                 sceneEl.systems['mindar-image-system'].start();
-                
-                // تغییر حالت صفحه برای نمایش دوربین و مخفی کردن دکمه
                 bodyEl.classList.remove('before-start');
                 
-                // باز کردن قفل صدا (برای اندروید و برخی موارد)
                 arVideo.muted = false;
                 arVideo.play();
                 arVideo.pause();
                 arVideo.currentTime = 0;
             });
 
-            // --- کنترل پخش ویدیو فقط پس از آماده شدن کامل سیستم AR ---
             sceneEl.addEventListener("arReady", () => {
                 const targetEntity = document.querySelector("#target-entity");
-                
-                // حالا که سیستم آماده است، دستورات پخش را ثبت می‌کنیم
-                targetEntity.addEventListener("targetFound", () => {
-                    arVideo.play();
-                });
-                targetEntity.addEventListener("targetLost", () => {
-                    arVideo.pause();
-                });
+                targetEntity.addEventListener("targetFound", () => arVideo.play());
+                targetEntity.addEventListener("targetLost", () => arVideo.pause());
             });
         });
     </script>
