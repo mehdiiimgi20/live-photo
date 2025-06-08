@@ -2,11 +2,11 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده نهایی</title>
+    <title>تابلو زنده هوشمند</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        /* استایل‌های ظاهری برای دکمه و تجربه کاربری بهتر */
+        /* استایل‌های ظاهری */
         body { margin: 0; }
         #start-button { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 24px; font-size: 18px; font-family: sans-serif; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 10000; }
         #start-button.hidden { display: none; }
@@ -22,22 +22,45 @@
     <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false; uiScanning: #scanning-ui" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
         
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-        
         <a-entity id="scanning-ui" mindar-ui-scanning="target: #target-entity"></a-entity>
 
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-            <a-video src="#myVideo" rotation="0 0 0" position="0 0 0" scale="0.566 1 1"></a-video>
+            <a-video id="ar-video-plane" src="#myVideo" rotation="0 0 0" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
-        // اسکریپت کامل برای کنترل پخش و صدا
         document.addEventListener('DOMContentLoaded', () => {
             const startButton = document.querySelector("#start-button");
             const sceneEl = document.querySelector('a-scene');
             const video = document.querySelector("#myVideo");
             const targetEntity = document.querySelector("#target-entity");
+            const videoPlane = document.querySelector("#ar-video-plane"); // پیدا کردن صفحه نمایش ویدیو
 
+            // ==========================================================
+            // === بخش هوشمند: تشخیص خودکار ابعاد ویدیو ===
+            // ==========================================================
+            video.addEventListener('loadedmetadata', () => {
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                let scaleX, scaleY;
+
+                // اگر ویدیو افقی یا مربع باشد
+                if (videoWidth >= videoHeight) {
+                    scaleX = 1;
+                    scaleY = videoHeight / videoWidth;
+                } 
+                // اگر ویدیو عمودی باشد
+                else {
+                    scaleY = 1;
+                    scaleX = videoWidth / videoHeight;
+                }
+                
+                // تنظیم خودکار اندازه صفحه ویدیو در AR
+                videoPlane.setAttribute('scale', `${scaleX} ${scaleY} 1`);
+            });
+
+            // کنترل صدا و شروع AR
             startButton.addEventListener('click', () => {
                 const mindarSystem = sceneEl.systems['mindar-image-system'];
                 mindarSystem.start();
@@ -49,6 +72,7 @@
                 video.currentTime = 0;
             });
 
+            // کنترل پخش ویدیو با پیدا شدن/گم شدن نشانگر
             targetEntity.addEventListener("targetFound", event => {
                 video.play();
             });
