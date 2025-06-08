@@ -2,53 +2,55 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه نهایی قطعی)</title>
+    <title>تابلو زنده (نسخه نهایی)</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        body { margin: 0; }
         
-        /* صفحه شروع */
+        /* حالت اولیه صفحه با پس‌زمینه و دکمه شروع */
         #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('./zima.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
+            z-index: 2; /* بالاتر از صحنه AR که در ابتدا مخفی است */
         }
         
         #start-button {
             padding: 20px 35px; font-size: 18px; font-family: sans-serif; font-weight: bold;
             color: white; background-color: rgba(255, 140, 0, 0.9); border: none;
-            border-radius: 15px; cursor: pointer; z-index: 10;
+            border-radius: 15px; cursor: pointer;
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3); text-align: center;
             line-height: 1.5; max-width: 80%;
         }
 
-        /* لایه رابط کاربری روی AR */
+        /* لایه رابط کاربری برای دکمه‌های کنترلی */
         #ui-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1; pointer-events: none;
+            z-index: 10001; pointer-events: none;
         }
-        #ui-container a { /* دکمه حالا یک لینک است */
+        #ui-container button {
             pointer-events: auto;
-            position: absolute; top: 20px; right: 20px;
-            padding: 8px 12px; font-size: 14px; font-family: sans-serif; font-weight: bold;
-            color: white; background-color: rgba(0, 0, 0, 0.6); border-radius: 8px;
-            text-decoration: none; display: none; /* در ابتدا مخفی */
         }
 
-        /* حالت تمام صفحه */
+        #toggle-view-button {
+            position: absolute; top: 20px; right: 20px;
+            padding: 8px 12px; font-size: 14px; font-family: sans-serif; font-weight: bold;
+            color: white; background-color: rgba(0, 0, 0, 0.6); border: none;
+            border-radius: 8px; cursor: pointer;
+        }
+
+        /* کانتینر برای حالت تمام صفحه */
         #fullscreen-player {
-            width: 100%; height: 100%; background-color: black;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: black; z-index: 10002;
+            display: flex; justify-content: center; align-items: center;
         }
-        #fullscreen-player video { width: 100%; max-height: 90%; }
-        #fullscreen-player a { /* دکمه بازگشت به AR */
-            margin-top: 15px; padding: 10px 20px; font-size: 16px;
-            background-color: #007bff; color: white; border-radius: 8px;
-            text-decoration: none;
-        }
+        #fullscreen-player video { width: 100%; height: 100%; object-fit: contain; }
         
         .hidden { display: none !important; }
     </style>
@@ -58,93 +60,101 @@
     <div id="splash-screen">
         <button id="start-button">قاب عکست رو جلوی دوربین بگیر</button>
     </div>
-
-    <div id="ar-container" class="hidden">
-        <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB">
-            <a-assets>
-                <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
-            </a-assets>
-            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-            <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-                <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
-            </a-entity>
-        </a-scene>
-        <div id="ui-container">
-            <a id="toggle-view-link" href="#">پخش تمام صفحه</a>
-        </div>
+    
+    <div id="ui-container" class="hidden">
+        <button id="toggle-view-button">پخش تمام صفحه</button>
     </div>
-
+    
     <div id="fullscreen-player" class="hidden"></div>
+
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB" renderer="logarithmicDepthBuffer: true">
+        <a-assets>
+            <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
+        </a-assets>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
+            <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
+        </a-entity>
+    </a-scene>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const isFullscreenMode = urlParams.get('mode') === 'fullscreen';
-            const videoTime = parseFloat(urlParams.get('time')) || 0;
-
+            const startButton = document.querySelector("#start-button");
             const splashScreen = document.querySelector("#splash-screen");
-            const arContainer = document.querySelector("#ar-container");
+            const sceneEl = document.querySelector("#ar-scene");
+            const arVideo = document.querySelector("#ar-video");
+            const arVideoPlane = document.querySelector("#ar-video-plane");
+            const targetEntity = document.querySelector("#target-entity");
+            const uiContainer = document.querySelector("#ui-container");
+            const toggleViewButton = document.querySelector("#toggle-view-button");
             const fullscreenPlayer = document.querySelector("#fullscreen-player");
 
-            // --- حالت تمام صفحه ---
-            if (isFullscreenMode) {
+            let isArMode = true;
+
+            // --- تشخیص ابعاد ویدیو ---
+            arVideo.addEventListener('loadedmetadata', () => {
+                const w = arVideo.videoWidth;
+                const h = arVideo.videoHeight;
+                arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
+            });
+
+            // --- منطق کلیک روی دکمه شروع ---
+            startButton.addEventListener('click', () => {
                 splashScreen.classList.add('hidden');
-                arContainer.classList.add('hidden');
-                fullscreenPlayer.classList.remove('hidden');
+                sceneEl.systems['mindar-image-system'].start();
+                arVideo.muted = false;
+            });
 
-                const video = document.createElement('video');
-                video.src = './video.mp4';
-                video.controls = true;
-                video.currentTime = videoTime;
-                video.play();
-                
-                const backToArLink = document.createElement('a');
-                backToArLink.href = './index.html'; // لینک بازگشت به حالت AR
-                backToArLink.textContent = 'پخش AR';
-                
-                fullscreenPlayer.appendChild(video);
-                fullscreenPlayer.appendChild(backToArLink);
-            } 
-            // --- حالت AR ---
-            else {
-                const startButton = document.querySelector("#start-button");
-                const sceneEl = document.querySelector("#ar-scene");
-                const arVideo = document.querySelector("#ar-video");
-                const arVideoPlane = document.querySelector("#ar-video-plane");
-                const toggleViewLink = document.querySelector("#toggle-view-link");
-
-                arVideo.addEventListener('loadedmetadata', () => {
-                    const w = arVideo.videoWidth;
-                    const h = arVideo.videoHeight;
-                    arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
+            // --- کنترل پخش ویدیو و نمایش دکمه‌ها ---
+            sceneEl.addEventListener("arReady", () => {
+                targetEntity.addEventListener("targetFound", () => {
+                    arVideo.play();
+                    uiContainer.classList.remove('hidden');
                 });
-
-                startButton.addEventListener('click', () => {
-                    splashScreen.classList.add('hidden');
-                    arContainer.classList.remove('hidden');
-                    sceneEl.systems['mindar-image-system'].start();
-                    arVideo.muted = false;
+                targetEntity.addEventListener("targetLost", () => {
+                    arVideo.pause();
+                    uiContainer.classList.add('hidden');
                 });
+            });
 
-                sceneEl.addEventListener("arReady", () => {
-                    const targetEntity = document.querySelector("#target-entity");
-                    targetEntity.addEventListener("targetFound", () => {
+            // --- منطق دکمه دو حالته (AR/Fullscreen) ---
+            toggleViewButton.addEventListener('click', () => {
+                const currentTime = arVideo.currentTime;
+                
+                if (isArMode) { // رفتن به حالت تمام صفحه
+                    arVideo.pause();
+                    sceneEl.pause(); // صحنه AR را متوقف کن
+                    fullscreenPlayer.classList.remove('hidden');
+                    
+                    const video = document.createElement('video');
+                    video.src = arVideo.src;
+                    video.currentTime = currentTime;
+                    video.controls = true;
+                    video.loop = true;
+                    fullscreenPlayer.innerHTML = ''; // پاک کردن محتوای قبلی
+                    fullscreenPlayer.appendChild(video);
+                    video.play();
+
+                    toggleViewButton.textContent = "پخش AR";
+                    isArMode = false;
+                } else { // بازگشت به حالت AR
+                    const fullscreenVideo = fullscreenPlayer.querySelector('video');
+                    if (fullscreenVideo) {
+                        arVideo.currentTime = fullscreenVideo.currentTime;
+                        fullscreenVideo.pause();
+                    }
+                    fullscreenPlayer.classList.add('hidden');
+                    fullscreenPlayer.innerHTML = ''; // پاک کردن ویدیو برای صرفه‌جویی در منابع
+                    
+                    sceneEl.play(); // صحنه AR را دوباره فعال کن
+                    if (targetEntity.getAttribute('mindar-image-target').visible) {
                         arVideo.play();
-                        toggleViewLink.style.display = 'block';
-                    });
-                    targetEntity.addEventListener("targetLost", () => {
-                        arVideo.pause();
-                        toggleViewLink.style.display = 'none';
-                    });
-                });
-
-                toggleViewLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const currentTime = arVideo.currentTime;
-                    // رفتن به حالت تمام صفحه با پارامترهای زمان و حالت
-                    window.location.href = `?mode=fullscreen&time=${currentTime}`;
-                });
-            }
+                    }
+                    
+                    toggleViewButton.textContent = "پخش تمام صفحه";
+                    isArMode = true;
+                }
+            });
         });
     </script>
 </body>
