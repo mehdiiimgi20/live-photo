@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه نهایی پایدار)</title>
+    <title>تابلو زنده (نسخه نهایی)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -11,20 +11,17 @@
             margin: 0;
         }
 
-        /* --- حالت قبل از شروع AR --- */
+        /* --- حالت قبل از شروع AR (برای نمایش صحیح پس‌زمینه و دکمه) --- */
         body.before-start {
-            /* نمایش عکس پس‌زمینه */
             background-image: url('./zima.jpg');
             background-size: cover;
-            background-repeat: no-repeat;
             background-position: center;
-            /* وسط‌چین کردن دکمه */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
-        /* در حالت قبل از شروع، صحنه AR کاملا مخفی است */
+        /* در حالت قبل از شروع، صحنه AR کاملا مخفی است تا دکمه دیده شود */
         .before-start #ar-scene {
             display: none;
         }
@@ -49,12 +46,13 @@
             z-index: 10000;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             text-align: center;
+            max-width: 80%;
         }
     </style>
 </head>
 <body class="before-start">
 
-    <button id="start-button">عکس رو جلو دوربین گوشیت بگیر</button>
+    <button id="start-button">قاب عکس رو مقابل دوربین گوشی نگه دار</button>
 
     <a-assets>
         <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
@@ -84,9 +82,13 @@
 
             // --- منطق اصلی: شروع با کلیک روی دکمه ---
             startButton.addEventListener('click', () => {
+                // فعال کردن سیستم AR
                 sceneEl.systems['mindar-image-system'].start();
+                
+                // تغییر حالت صفحه برای نمایش دوربین و مخفی کردن دکمه
                 bodyEl.classList.remove('before-start');
                 
+                // باز کردن قفل صدا (برای اندروید و برخی موارد)
                 arVideo.muted = false;
                 arVideo.play();
                 arVideo.pause();
@@ -97,7 +99,7 @@
             sceneEl.addEventListener("arReady", () => {
                 const targetEntity = document.querySelector("#target-entity");
                 
-                // حالا که سیستم آماده است، با اطمینان دستورات پخش را ثبت می‌کنیم
+                // حالا که سیستم آماده است، دستورات پخش را ثبت می‌کنیم
                 targetEntity.addEventListener("targetFound", () => {
                     arVideo.play();
                 });
