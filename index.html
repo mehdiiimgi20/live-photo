@@ -2,41 +2,55 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (بزن بریم)</title>
+    <title>تابلو زنده (نسخه نهایی)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body { margin: 0; }
+        /* استایل‌های اصلی صفحه */
+        body {
+            margin: 0;
+            /* استفاده از عکسی که فرستادید به عنوان پس‌زمینه */
+            background-image: url('./zima.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            /* این بخش برای وسط‌چین کردن دکمه است */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-        /* استایل دکمه "بزن بریم" */
+        /* استایل دکمه جدید */
         #start-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             padding: 15px 30px;
-            font-size: 24px;
+            font-size: 18px;
             font-family: sans-serif;
             font-weight: bold;
             color: white;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: rgba(255, 140, 0, 0.85); /* نارنجی تیره‌تر و کمی واضح‌تر */
             border: none;
-            border-radius: 50px; /* دکمه گرد */
+            border-radius: 8px; /* کادر مستطیلی با گوشه‌های گرد */
             cursor: pointer;
             z-index: 10000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* افزودن سایه برای خوانایی بهتر */
+            text-align: center;
         }
 
-        .hidden { display: none !important; }
+        /* کلاسی برای مخفی کردن عناصر */
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-    <button id="start-button">بزن بریم</button>
+    <button id="start-button">عکس رو جلو دوربین گوشیت بگیر</button>
 
     <a-assets>
         <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
     </a-assets>
 
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
+    <a-scene id="ar-scene" class="hidden" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
             <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
@@ -50,6 +64,7 @@
             const arVideo = document.querySelector("#ar-video");
             const arVideoPlane = document.querySelector("#ar-video-plane");
             const targetEntity = document.querySelector("#target-entity");
+            const bodyEl = document.querySelector("body");
 
             // --- تشخیص خودکار ابعاد ویدیو ---
             arVideo.addEventListener('loadedmetadata', () => {
@@ -58,15 +73,17 @@
                 arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
             });
 
-            // --- منطق اصلی: شروع با کلیک روی دکمه "بزن بریم" ---
+            // --- منطق اصلی: شروع با کلیک روی دکمه ---
             startButton.addEventListener('click', () => {
-                // 1. سیستم AR و دوربین را فعال کن
+                // 1. سیستم AR را فعال کن
                 sceneEl.systems['mindar-image-system'].start();
-
-                // 2. دکمه را مخفی کن
+                
+                // 2. دکمه و پس‌زمینه را مخفی و صحنه AR را نمایان کن
                 startButton.classList.add('hidden');
-
-                // 3. باز کردن قفل صدا برای مرورگرها
+                sceneEl.classList.remove('hidden');
+                bodyEl.style.backgroundImage = 'none'; // حذف پس‌زمینه برای نمایش دوربین
+                
+                // 3. باز کردن قفل صدا
                 arVideo.muted = false;
                 arVideo.play();
                 arVideo.pause();
