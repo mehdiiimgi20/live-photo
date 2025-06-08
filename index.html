@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه نهایی)</title>
+    <title>تابلو زنده (نسخه پایDار)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -22,15 +22,11 @@
             border: 1px solid white;
             border-radius: 8px;
             cursor: pointer;
-            z-index: 10001; /* بالاتر از همه عناصر */
+            z-index: 10001;
         }
         
-        /* کلاس برای مخفی کردن عناصر */
-        .hidden {
-            display: none !important;
-        }
+        .hidden { display: none !important; }
 
-        /* استایل ویدیو وقتی که تمام صفحه است */
         video#myVideo.fullscreen-active {
             position: fixed;
             top: 0;
@@ -39,7 +35,7 @@
             height: 100%;
             object-fit: contain;
             background: black;
-            z-index: 10000; /* پشت دکمه قرار می‌گیرد */
+            z-index: 10000;
         }
     </style>
 </head>
@@ -61,7 +57,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // پیدا کردن تمام عناصر لازم
             const startButton = document.querySelector("#start-button");
             const fullscreenButton = document.querySelector("#fullscreen-button");
             const sceneEl = document.querySelector("#ar-scene");
@@ -91,35 +86,34 @@
                 video.currentTime = 0;
             });
 
-            // --- کنترل پخش ویدیو در AR ---
+            // --- کنترل پخش ویدیو در AR (نسخه اصلاح شده و ساده) ---
+            // با پیدا شدن نشانگر، ویدیو همیشه پخش می‌شود
             targetEntity.addEventListener("targetFound", () => {
-                if(isArMode) video.play();
+                video.play();
             });
-            targetEntity.addEventListener("targetLost", () => video.pause());
+            // با گم شدن نشانگر، ویدیو متوقف می‌شود
+            targetEntity.addEventListener("targetLost", () => {
+                video.pause();
+            });
 
             // --- کنترل حالت تمام صفحه با قابلیت تغییر متن دکمه ---
             fullscreenButton.addEventListener('click', () => {
                 const currentTime = video.currentTime;
 
-                // اگر در حالت AR هستیم و می‌خواهیم تمام صفحه شویم
                 if (isArMode) {
-                    sceneEl.systems['mindar-image-system'].pause(); // توقف موقت سیستم AR
-                    video.classList.add('fullscreen-active'); // فعال کردن حالت تمام صفحه برای ویدیو
+                    sceneEl.systems['mindar-image-system'].pause();
+                    video.classList.add('fullscreen-active');
                     video.currentTime = currentTime;
                     video.play();
                     
-                    // تغییر متن دکمه
                     fullscreenButton.textContent = "پخش واقعیت افزوده";
                     isArMode = false;
-                } 
-                // اگر در حالت تمام صفحه هستیم و می‌خواهیم به AR برگردیم
-                else {
-                    video.classList.remove('fullscreen-active'); // غیرفعال کردن حالت تمام صفحه
-                    sceneEl.systems['mindar-image-system'].resume(); // فعال‌سازی مجدد سیستم AR
+                } else {
+                    video.classList.remove('fullscreen-active');
+                    sceneEl.systems['mindar-image-system'].resume();
                     video.currentTime = currentTime;
-                    video.pause(); // ویدیو را متوقف می‌کنیم تا فقط وقتی نشانگر پیدا شد پخش شود
+                    video.pause();
                     
-                    // تغییر متن دکمه به حالت اولیه
                     fullscreenButton.textContent = "تمام صفحه";
                     isArMode = true;
                 }
