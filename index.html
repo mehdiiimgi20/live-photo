@@ -29,12 +29,10 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* لایه رابط کاربری که روی همه چیز قرار می‌گیرد */
         #ui-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10001; pointer-events: none; /* کلیک‌ها از این لایه عبور می‌کنند */
+            z-index: 10001; pointer-events: none;
         }
-        /* اما خود دکمه‌ها کلیک را دریافت می‌کنند */
         #ui-container > button {
             pointer-events: auto;
         }
@@ -43,10 +41,9 @@
             position: absolute; top: 20px; right: 20px;
             padding: 8px 12px; font-size: 14px; font-family: sans-serif; font-weight: bold;
             color: white; background-color: rgba(0, 0, 0, 0.6); border: none;
-            border-radius: 8px; cursor: pointer; display: none; /* در ابتدا مخفی است */
+            border-radius: 8px; cursor: pointer; display: none;
         }
 
-        /* کانتینر برای حالت تمام صفحه */
         #fullscreen-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: black; z-index: 10002; display: none;
@@ -85,6 +82,7 @@
             const bodyEl = document.querySelector("body");
             const toggleViewButton = document.querySelector("#toggle-view-button");
             const fullscreenContainer = document.querySelector("#fullscreen-container");
+            const targetEntity = document.querySelector("#target-entity");
 
             let fullscreenVideo = null;
             let isArMode = true;
@@ -105,7 +103,6 @@
             });
 
             sceneEl.addEventListener("arReady", () => {
-                const targetEntity = document.querySelector("#target-entity");
                 targetEntity.addEventListener("targetFound", () => {
                     arVideo.play();
                     toggleViewButton.style.display = 'block';
@@ -116,13 +113,13 @@
                 });
             });
 
-            // --- منطق دکمه دو حالته (نسخه اصلاح شده) ---
+            // --- منطق دکمه دو حالته (نسخه نهایی و اصلاح شده) ---
             toggleViewButton.addEventListener('click', () => {
                 const currentTime = arVideo.currentTime;
 
-                // اگر در حالت AR هستیم و می‌خواهیم تمام صفحه شویم
-                if (isArMode) {
+                if (isArMode) { // رفتن به حالت تمام صفحه
                     arVideo.pause();
+                    sceneEl.systems['mindar-image-system'].pause(); // توقف موقت موتور AR
                     fullscreenContainer.style.display = 'flex';
                     if (!fullscreenVideo) {
                         fullscreenVideo = arVideo.cloneNode(true);
@@ -134,17 +131,19 @@
                     
                     toggleViewButton.textContent = "پخش AR";
                     isArMode = false;
-                } 
-                // اگر در حالت تمام صفحه هستیم و می‌خواهیم به AR برگردیم
-                else {
+                } else { // بازگشت به حالت AR
                     if (fullscreenVideo) {
                         fullscreenVideo.pause();
                         arVideo.currentTime = fullscreenVideo.currentTime;
                     }
                     fullscreenContainer.style.display = 'none';
-                    
-                    // نیازی به پخش دستی ویدیو نیست.
-                    // سیستم تشخیص نشانگر (targetFound/targetLost) به صورت خودکار این کار را انجام می‌دهد.
+                    sceneEl.systems['mindar-image-system'].resume(); // فعال‌سازی مجدد موتور AR
+
+                    // === کد اصلاح شده برای بازگشت صحیح ===
+                    // به صورت دستی چک می‌کنیم آیا نشانگر هنوز دیده می‌شود یا نه
+                    if (targetEntity.getAttribute('mindar-image-target').visible) {
+                        arVideo.play(); // اگر دیده می‌شود، پخش را ادامه بده
+                    }
                     
                     toggleViewButton.textContent = "پخش تمام صفحه";
                     isArMode = true;
