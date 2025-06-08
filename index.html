@@ -2,68 +2,53 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (ورود با رمز)</title>
+    <title>تابلو زنده (با قابلیت تمام صفحه)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; }
         
-        .container {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-size: cover;
-            background-position: center;
-        }
-
-        /* صفحه ورود رمز عبور */
-        #password-screen {
-            flex-direction: column;
-            background-color: #f0f0f0;
-        }
-        #password-box {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        #password-box input {
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-top: 10px;
-            text-align: center;
-        }
-        #password-box button {
-            margin-top: 15px;
-            padding: 10px 25px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #error-message {
-            color: #dc3545; /* قرمز */
-            margin-top: 10px;
-        }
-
-        /* صفحه شروع AR */
+        /* حالت اولیه صفحه با پس‌زمینه و دکمه */
         #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('./zima.jpg');
+            background-size: cover; background-position: center;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 2;
         }
         
         #start-button {
-            padding: 20px 35px; font-size: 18px; font-weight: bold;
+            padding: 20px 35px; font-size: 18px; font-family: sans-serif; font-weight: bold;
             color: white; background-color: rgba(255, 140, 0, 0.9); border: none;
-            border-radius: 15px; cursor: pointer; z-index: 10;
+            border-radius: 15px; cursor: pointer;
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3); text-align: center;
             line-height: 1.5; max-width: 80%;
+        }
+
+        /* لایه رابط کاربری برای دکمه کنترلی */
+        #ui-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10001; pointer-events: none;
+        }
+        #ui-container button {
+            pointer-events: auto; /* فقط دکمه کلیک را دریافت می‌کند */
+        }
+
+        #toggle-view-button {
+            position: absolute; top: 20px; right: 20px;
+            padding: 8px 12px; font-size: 14px; font-family: sans-serif; font-weight: bold;
+            color: white; background-color: rgba(0, 0, 0, 0.6); border: none;
+            border-radius: 8px; cursor: pointer;
+        }
+
+        /* پلیر تمام صفحه */
+        #fullscreen-player {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: black; z-index: 10002;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #fullscreen-player video {
+            width: 100%; height: 100%; object-fit: contain;
         }
         
         .hidden { display: none !important; }
@@ -71,20 +56,17 @@
 </head>
 <body>
 
-    <div id="password-screen" class="container">
-        <div id="password-box">
-            <h3>برای ورود رمز را وارد کنید</h3>
-            <input type="password" id="password-input" placeholder="...رمز عبور...">
-            <button id="password-submit">ورود</button>
-            <p id="error-message" class="hidden">رمز عبور اشتباه است</p>
-        </div>
-    </div>
-
-    <div id="splash-screen" class="container hidden">
+    <div id="splash-screen">
         <button id="start-button">قاب عکست رو جلوی دوربین بگیر</button>
     </div>
+    
+    <div id="ui-container" class="hidden">
+        <button id="toggle-view-button">پخش تمام صفحه</button>
+    </div>
+    
+    <div id="fullscreen-player" class="hidden"></div>
 
-    <a-scene id="ar-scene" class="hidden" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB">
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB" renderer="logarithmicDepthBuffer: true">
         <a-assets>
             <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
         </a-assets>
@@ -96,55 +78,82 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- بخش تنظیمات ---
-            // !!! برای تغییر رمز، فقط این قسمت را ویرایش کنید !!!
-            const CORRECT_PASSWORD = '1234'; 
-            // ------------------
-
-            const passwordScreen = document.querySelector("#password-screen");
-            const passwordInput = document.querySelector("#password-input");
-            const passwordSubmit = document.querySelector("#password-submit");
-            const errorMessage = document.querySelector("#error-message");
-            
-            const splashScreen = document.querySelector("#splash-screen");
+            // پیدا کردن تمام عناصر لازم از صفحه
             const startButton = document.querySelector("#start-button");
-            
+            const splashScreen = document.querySelector("#splash-screen");
             const sceneEl = document.querySelector("#ar-scene");
             const arVideo = document.querySelector("#ar-video");
             const arVideoPlane = document.querySelector("#ar-video-plane");
             const targetEntity = document.querySelector("#target-entity");
+            const uiContainer = document.querySelector("#ui-container");
+            const toggleViewButton = document.querySelector("#toggle-view-button");
+            const fullscreenPlayer = document.querySelector("#fullscreen-player");
 
-            // --- منطق بررسی رمز عبور ---
-            passwordSubmit.addEventListener('click', () => {
-                if (passwordInput.value === CORRECT_PASSWORD) {
-                    // اگر رمز درست بود، صفحه رمز را مخفی و صفحه شروع را نمایش بده
-                    passwordScreen.classList.add('hidden');
-                    splashScreen.classList.remove('hidden');
-                } else {
-                    // اگر رمز اشتباه بود، پیام خطا را نمایش بده
-                    errorMessage.classList.remove('hidden');
-                    passwordInput.value = ''; // خالی کردن فیلد
-                }
-            });
+            let isArMode = true; // متغیر برای نگهداری حالت فعلی
 
-            // --- منطق شروع AR (فقط پس از ورود موفق) ---
-            startButton.addEventListener('click', () => {
-                splashScreen.classList.add('hidden');
-                sceneEl.classList.remove('hidden');
-                sceneEl.systems['mindar-image-system'].start();
-                arVideo.muted = false;
-            });
-
-            // --- کنترل پخش ویدیو ---
+            // --- تشخیص خودکار ابعاد ویدیو ---
             arVideo.addEventListener('loadedmetadata', () => {
                 const w = arVideo.videoWidth;
                 const h = arVideo.videoHeight;
                 arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
             });
 
+            // --- منطق کلیک روی دکمه شروع ---
+            startButton.addEventListener('click', () => {
+                splashScreen.classList.add('hidden'); // مخفی کردن صفحه شروع
+                sceneEl.systems['mindar-image-system'].start(); // فعال کردن دوربین و AR
+                arVideo.muted = false; // باز کردن قفل صدا
+            });
+
+            // --- کنترل پخش ویدیو و نمایش دکمه کنترلی ---
             sceneEl.addEventListener("arReady", () => {
-                targetEntity.addEventListener("targetFound", () => arVideo.play());
-                targetEntity.addEventListener("targetLost", () => arVideo.pause());
+                targetEntity.addEventListener("targetFound", () => {
+                    arVideo.play();
+                    uiContainer.classList.remove('hidden'); // نمایش دکمه کنترلی
+                });
+                targetEntity.addEventListener("targetLost", () => {
+                    arVideo.pause();
+                    uiContainer.classList.add('hidden'); // مخفی کردن دکمه کنترلی
+                });
+            });
+
+            // --- منطق دکمه دو حالته (AR/Fullscreen) ---
+            toggleViewButton.addEventListener('click', () => {
+                const currentTime = arVideo.currentTime;
+                
+                if (isArMode) { // رفتن به حالت تمام صفحه
+                    arVideo.pause();
+                    fullscreenPlayer.classList.remove('hidden'); // نمایش پلیر تمام صفحه
+                    
+                    // ایجاد یک ویدیو پلیر جدید برای حالت تمام صفحه
+                    const video = document.createElement('video');
+                    video.src = arVideo.src;
+                    video.currentTime = currentTime;
+                    video.controls = true; // نمایش کنترل‌های پخش
+                    video.loop = true;
+                    fullscreenPlayer.innerHTML = ''; // پاک کردن محتوای قبلی
+                    fullscreenPlayer.appendChild(video);
+                    video.play();
+
+                    toggleViewButton.textContent = "پخش AR";
+                    isArMode = false;
+                } else { // بازگشت به حالت AR
+                    const fullscreenVideo = fullscreenPlayer.querySelector('video');
+                    if (fullscreenVideo) {
+                        arVideo.currentTime = fullscreenVideo.currentTime; // همگام‌سازی زمان ویدیو
+                        fullscreenVideo.pause();
+                    }
+                    fullscreenPlayer.classList.add('hidden'); // مخفی کردن پلیر تمام صفحه
+                    fullscreenPlayer.innerHTML = ''; // پاک کردن ویدیو برای صرفه‌جویی در منابع
+                    
+                    // اگر نشانگر هنوز جلوی دوربین باشد، پخش ویدیوی AR ادامه پیدا می‌کند
+                    if (targetEntity.getAttribute('mindar-image-target').visible) {
+                        arVideo.play();
+                    }
+                    
+                    toggleViewButton.textContent = "پخش تمام صفحه";
+                    isArMode = true;
+                }
             });
         });
     </script>
