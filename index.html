@@ -2,36 +2,21 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده با MindAR</title>
+    <title>تابلو زنده نهایی</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        /* استایل برای نمایش بهتر دکمه شروع */
-        #start-button {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            font-size: 18px;
-            font-family: sans-serif;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            z-index: 10000;
-        }
-        #start-button.hidden {
-            display: none;
-        }
+        /* استایل‌های ظاهری برای دکمه و تجربه کاربری بهتر */
+        body { margin: 0; }
+        #start-button { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 24px; font-size: 18px; font-family: sans-serif; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 10000; }
+        #start-button.hidden { display: none; }
     </style>
 </head>
 <body>
     <button id="start-button">شروع</button>
 
     <a-assets>
-        <video id="myVideo" src="./video.mp4" loop="false" playsinline webkit-playsinline muted></video>
+        <video id="myVideo" src="./video.mp4" loop="false" playsinline webkit-playsinline></video>
     </a-assets>
 
     <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false; uiScanning: #scanning-ui" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
@@ -41,35 +26,41 @@
         <a-entity id="scanning-ui" mindar-ui-scanning="target: #target-entity"></a-entity>
 
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-            <a-video src="#myVideo" rotation="0 0 0" position="0 0 0" scale="1 0.75 1"></a-video>
+            <a-video src="#myVideo" rotation="0 0 0" position="0 0 0" scale="1 0.594 1"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
+        // منتظر می‌مانیم تا کل صفحه بارگذاری شود
         document.addEventListener('DOMContentLoaded', () => {
+            // پیدا کردن عناصر لازم از صفحه
             const startButton = document.querySelector("#start-button");
             const sceneEl = document.querySelector('a-scene');
             const video = document.querySelector("#myVideo");
             const targetEntity = document.querySelector("#target-entity");
 
-            // شروع کردن AR با کلیک روی دکمه
+            // تعریف رویداد برای کلیک روی دکمه "شروع"
             startButton.addEventListener('click', () => {
                 const mindarSystem = sceneEl.systems['mindar-image-system'];
                 mindarSystem.start(); // شروع دوربین و اسکن
-                startButton.classList.add('hidden');
-            });
+                startButton.classList.add('hidden'); // مخفی کردن دکمه
 
-            // وقتی نشانگر پیدا شد
-            targetEntity.addEventListener("targetFound", event => {
-                console.log("Target Found");
+                // فعال‌سازی صدا با کلیک کاربر
+                video.muted = false;
                 video.play();
+                video.pause();
+                video.currentTime = 0; // بازگرداندن ویدیو به ابتدای آن
             });
 
-            // وقتی نشانگر گم شد
+            // تعریف رویداد برای زمانی که نشانگر پیدا می‌شود
+            targetEntity.addEventListener("targetFound", event => {
+                video.play(); // پخش ویدیو
+            });
+
+            // تعریف رویداد برای زمانی که نشانگر گم می‌شود
             targetEntity.addEventListener("targetLost", event => {
-                console.log("Target Lost");
-                video.pause();
-                video.currentTime = 0; // بازگشت ویدیو به اول
+                video.pause(); // توقف ویدیو
+                video.currentTime = 0; // بازگرداندن ویدیو به ابتدا
             });
         });
     </script>
