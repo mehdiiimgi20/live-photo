@@ -46,6 +46,7 @@
             border-radius: 8px; cursor: pointer; display: none; /* در ابتدا مخفی است */
         }
 
+        /* کانتینر برای حالت تمام صفحه */
         #fullscreen-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: black; z-index: 10002; display: none;
@@ -68,7 +69,7 @@
         <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
     </a-assets>
 
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
+    <a-scene id="ar-scene" class="hidden" mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
             <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
@@ -84,7 +85,6 @@
             const bodyEl = document.querySelector("body");
             const toggleViewButton = document.querySelector("#toggle-view-button");
             const fullscreenContainer = document.querySelector("#fullscreen-container");
-            const uiContainer = document.querySelector("#ui-container");
 
             let fullscreenVideo = null;
             let isArMode = true;
@@ -116,8 +116,11 @@
                 });
             });
 
+            // --- منطق دکمه دو حالته (نسخه اصلاح شده) ---
             toggleViewButton.addEventListener('click', () => {
                 const currentTime = arVideo.currentTime;
+
+                // اگر در حالت AR هستیم و می‌خواهیم تمام صفحه شویم
                 if (isArMode) {
                     arVideo.pause();
                     fullscreenContainer.style.display = 'flex';
@@ -128,17 +131,21 @@
                     }
                     fullscreenVideo.currentTime = currentTime;
                     fullscreenVideo.play();
+                    
                     toggleViewButton.textContent = "پخش AR";
                     isArMode = false;
-                } else {
+                } 
+                // اگر در حالت تمام صفحه هستیم و می‌خواهیم به AR برگردیم
+                else {
                     if (fullscreenVideo) {
                         fullscreenVideo.pause();
                         arVideo.currentTime = fullscreenVideo.currentTime;
                     }
                     fullscreenContainer.style.display = 'none';
-                    if (document.querySelector("#target-entity").getAttribute('mindar-image-target').visible) {
-                        arVideo.play();
-                    }
+                    
+                    // نیازی به پخش دستی ویدیو نیست.
+                    // سیستم تشخیص نشانگر (targetFound/targetLost) به صورت خودکار این کار را انجام می‌دهد.
+                    
                     toggleViewButton.textContent = "پخش تمام صفحه";
                     isArMode = true;
                 }
