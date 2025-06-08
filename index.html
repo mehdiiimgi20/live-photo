@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه نهایی ساده)</title>
+    <title>تابلو زنده (نسخه نهایی)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -46,6 +46,7 @@
             text-align: center;
             line-height: 1.5;
             max-width: 80%;
+            /* انیمیشن تپنده برای جلب توجه */
             animation: pulse 2s infinite;
         }
 
@@ -100,7 +101,7 @@
                 arVideo.currentTime = 0;
             });
 
-            // --- کنترل پخش ویدیو پس از آماده شدن کامل سیستم AR ---
+            // --- کنترل پخش ویدیو فقط پس از آماده شدن کامل سیستم AR ---
             sceneEl.addEventListener("arReady", () => {
                 const targetEntity = document.querySelector("#target-entity");
                 
