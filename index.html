@@ -2,40 +2,56 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه نهایی کامل)</title>
+    <title>تابلو زنده (نسخه نهایی)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
         .hidden { display: none !important; }
 
-        /* --- صفحه شروع جدید و مینیمال --- */
+        /* --- صفحه شروع جدید --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('./zima.jpg');
-            background-size: cover; background-position: center center;
-            display: flex; justify-content: center; align-items: center;
+            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('./zima.jpg');
+            background-size: cover;
+            background-position: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             z-index: 3;
             transition: opacity 0.8s ease-out;
+            text-align: center;
+            color: white;
         }
+        
         #start-container {
-            text-align: center; color: white;
-            background-color: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            padding: 30px; border-radius: 20px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            max-width: 90%;
         }
-        #start-container p { font-size: 18px; margin: 0 0 20px 0; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+        #start-container p {
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 1.6;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.7);
+            margin: 0 0 30px 0;
+        }
+        
         #start-button {
-            width: 70px; height: 70px;
-            background-color: rgba(255, 140, 0, 0.8);
-            border: 2px solid rgba(255, 255, 255, 0.7);
-            border-radius: 50%; cursor: pointer; display: inline-flex;
-            justify-content: center; align-items: center;
-            transition: transform 0.2s, background-color 0.2s;
+            padding: 15px 50px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            background: linear-gradient(45deg, #FFD700, #FFA500); /* گرادیانت طلایی-نارنجی */
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        #start-button:hover { transform: scale(1.1); background-color: rgba(255, 140, 0, 1); }
-        #start-button svg { width: 50%; height: 50%; fill: white; margin-left: 5px; }
+        #start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
         
         /* --- سایر بخش‌های UI (بدون تغییر) --- */
         #ui-container {
@@ -43,7 +59,8 @@
             z-index: 10003; pointer-events: none;
         }
         #toggle-view-button {
-            pointer-events: auto; position: absolute; top: 20px; right: 20px;
+            pointer-events: auto;
+            position: absolute; top: 20px; right: 20px;
             padding: 8px 12px; font-size: 14px; font-weight: bold;
             color: white; background-color: rgba(0, 0, 0, 0.6);
             border: none; border-radius: 8px; cursor: pointer;
@@ -61,10 +78,8 @@
 
     <div id="splash-screen">
         <div id="start-container">
-            <p>برای شروع، دکمه را لمس کنید</p>
-            <button id="start-button">
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </button>
+            <p>قاب عکس خودتو جلو دوربین گوشی قرار بده تا سوپرایز بشی</p>
+            <button id="start-button">بزن بریم!</button>
         </div>
     </div>
     
@@ -160,8 +175,6 @@
                     
                     if (targetEntity.getAttribute('mindar-image-target').visible) {
                         arVideo.play();
-                    } else {
-                        uiContainer.classList.add('hidden');
                     }
                     
                     toggleViewButton.textContent = "پخش تمام صفحه";
