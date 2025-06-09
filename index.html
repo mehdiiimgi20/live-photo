@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده هوشمند (نسخه پیشرفته)</title>
+    <title>تابلو زنده هوشمند (بدون محدودیت)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -27,7 +27,7 @@
         }
         #loading-progress {
             height: 100%; width: 0%;
-            background-color: #FFA500; /* Orange */
+            background-color: orange;
             transition: width 0.4s;
         }
         #start-button {
@@ -39,42 +39,6 @@
         }
         #start-button:disabled { background-color: #999; cursor: not-allowed; opacity: 0.7; }
         #start-button:not(:disabled):hover { transform: scale(1.05); background-color: #FFA500; }
-
-        /* لایه رابط کاربری روی AR */
-        #ui-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10001; pointer-events: none; opacity: 0; transition: opacity 0.3s;
-        }
-        #ui-container.visible { opacity: 1; }
-        #toggle-view-button {
-            pointer-events: auto; position: absolute; top: 20px; right: 20px;
-            padding: 10px 15px; font-size: 14px; font-weight: bold;
-            color: white; background-color: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; cursor: pointer;
-            backdrop-filter: blur(8px);
-        }
-        
-        /* پلیر مودال (کمی کوچکتر از تمام صفحه) */
-        #modal-player {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.9); z-index: 10002;
-            display: flex; justify-content: center; align-items: center;
-        }
-        #modal-player video { width: 95%; height: 95%; object-fit: contain; }
-
-        /* انیمیشن تشخیص هدف */
-        #target-animation {
-            position: fixed; top: 50%; left: 50%;
-            width: 120px; height: 120px;
-            border: 4px solid rgba(0, 255, 13, 0.7);
-            border-radius: 50%; z-index: 10000;
-            opacity: 0; pointer-events: none;
-        }
-        #target-animation.animate { animation: target-pulse 0.8s ease-out; }
-        @keyframes target-pulse {
-            0% { transform: translate(-50%, -50%) scale(0.7); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-        }
         
         /* صفحه خطا */
         #error-overlay {
@@ -84,6 +48,7 @@
             z-index: 10003; padding: 20px; text-align: center;
         }
         #error-overlay button { padding: 10px 20px; margin-top: 20px; background-color: orange; border: none; border-radius: 5px; cursor: pointer; }
+
     </style>
 </head>
 <body>
@@ -95,19 +60,13 @@
         <button id="start-button" disabled>در حال بارگذاری منابع...</button>
     </div>
     
-    <div id="ui-container" class="hidden">
-        <button id="toggle-view-button">پخش تمام صفحه</button>
-    </div>
-    
-    <div id="modal-player" class="hidden"></div>
-    <div id="target-animation"></div>
     <div id="error-overlay" class="hidden">
-        <h2>خطا در اجرا</h2>
+        <h2>خطا در بارگذاری</h2>
         <p id="error-text"></p>
         <button onclick="window.location.reload()">تلاش مجدد</button>
     </div>
     
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB" renderer="logarithmicDepthBuffer: true">
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB">
         <a-assets>
             <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
         </a-assets>
@@ -119,7 +78,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- عناصر و حالت برنامه ---
             const elements = {
                 splash: document.querySelector("#splash-screen"),
                 progress: document.querySelector("#loading-progress"),
@@ -128,52 +86,53 @@
                 arVideo: document.querySelector("#ar-video"),
                 arVideoPlane: document.querySelector("#ar-video-plane"),
                 target: document.querySelector("#target-entity"),
-                uiContainer: document.querySelector("#ui-container"),
-                toggleBtn: document.querySelector("#toggle-view-button"),
-                modalPlayer: document.querySelector("#modal-player"),
                 errorOverlay: document.querySelector("#error-overlay"),
                 errorText: document.querySelector("#error-text"),
-                targetAnimation: document.querySelector("#target-animation"),
             };
-            const state = { isModalMode: false };
 
-            // --- توابع اصلی ---
             const showError = (message) => {
-                elements.errorText.textContent = `مشکل: ${message}. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.`;
+                elements.errorText.textContent = `مشکل: ${message}. لطفاً از صحت آدرس فایل‌ها و اتصال اینترنت خود مطمئن شوید.`;
                 elements.errorOverlay.classList.remove('hidden');
             };
 
+            // --- تابع بارگذاری منابع (بدون محدودیت زمانی) ---
             const loadAssets = () => {
-                const assets = [elements.arVideo];
-                let loadedCount = 0;
-                const totalAssets = assets.length;
-
-                const loadingTimeout = setTimeout(() => {
-                    showError("بارگذاری بیش از حد طول کشید");
-                }, 15000); // تایم اوت 15 ثانیه‌ای
-
-                assets.forEach(asset => {
-                    asset.addEventListener('loadeddata', () => {
-                        loadedCount++;
-                        elements.progress.style.width = `${(loadedCount / totalAssets) * 100}%`;
-                        if (loadedCount === totalAssets) {
-                            clearTimeout(loadingTimeout);
-                            elements.startBtn.disabled = false;
-                            elements.startBtn.textContent = "شروع تجربه AR";
-                        }
-                    });
-                    asset.addEventListener('error', () => showError("ویدیو بارگذاری نشد"));
+                let assetsLoaded = false;
+                
+                // استفاده از رویداد 'canplay' که قابل اطمینان‌تر است
+                elements.arVideo.addEventListener('canplay', () => {
+                    if (assetsLoaded) return;
+                    assetsLoaded = true;
+                    elements.progress.style.width = '100%';
+                    elements.startBtn.disabled = false;
+                    elements.startBtn.textContent = "شروع تجربه AR";
+                });
+                
+                elements.arVideo.addEventListener('error', () => {
+                    showError("فایل ویدیو پیدا نشد یا در بارگذاری آن مشکلی وجود دارد");
                 });
             };
             
-            // --- راه‌اندازی اولیه ---
             loadAssets();
             
-            // --- تنظیم ابعاد ویدیو ---
             elements.arVideo.addEventListener('loadedmetadata', () => {
                 const w = elements.arVideo.videoWidth;
                 const h = elements.arVideo.videoHeight;
                 elements.arVideoPlane.setAttribute('scale', `${w/h > 1 ? 1 : w/h} ${w/h > 1 ? h/w : 1} 1`);
             });
 
-            // --- کلیک روی دکمه شروع ---
+            elements.startBtn.addEventListener('click', () => {
+                elements.splash.style.opacity = '0';
+                setTimeout(() => elements.splash.classList.add('hidden'), 500);
+                elements.scene.systems['mindar-image-system'].start();
+                elements.arVideo.muted = false;
+            });
+
+            elements.scene.addEventListener("arReady", () => {
+                elements.target.addEventListener("targetFound", () => elements.arVideo.play());
+                elements.target.addEventListener("targetLost", () => elements.arVideo.pause());
+            });
+        });
+    </script>
+</body>
+</html>
