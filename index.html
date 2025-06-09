@@ -12,13 +12,9 @@
         /* صفحه شروع */
         #splash-screen {
             background-image: url('./zima.jpg');
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-size: cover; background-position: center;
+            display: flex; justify-content: center; align-items: center;
         }
-        
         #start-button {
             padding: 20px 35px; font-size: 18px; font-weight: bold;
             color: white; background-color: rgba(255, 140, 0, 0.9); border: none;
@@ -32,11 +28,10 @@
             z-index: 1; pointer-events: none;
         }
         #toggle-view-link {
-            pointer-events: auto;
-            position: absolute; top: 20px; right: 20px;
+            pointer-events: auto; position: absolute; top: 20px; right: 20px;
             padding: 8px 12px; font-size: 14px; font-weight: bold;
             color: white; background-color: rgba(0, 0, 0, 0.6); border-radius: 8px;
-            text-decoration: none; display: none; /* در ابتدا مخفی */
+            text-decoration: none; display: none;
         }
 
         /* حالت تمام صفحه */
@@ -44,8 +39,23 @@
             width: 100%; height: 100%; background-color: black;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        #fullscreen-player video { width: 100%; max-height: 90%; }
-        #fullscreen-player a {
+        #video-wrapper {
+            width: 100%; height: 90%; position: relative;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #video-wrapper video { width: 100%; height: 100%; object-fit: contain; }
+        #fs-play-button {
+            position: absolute; width: 80px; height: 80px;
+            background-color: rgba(0,0,0,0.5); border: 2px solid white;
+            border-radius: 50%; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #fs-play-button::after {
+            content: ''; display: block; width: 0; height: 0; border-style: solid;
+            border-width: 20px 0 20px 35px; border-color: transparent transparent transparent white;
+            margin-left: 10px;
+        }
+        #back-to-ar-link {
             margin-top: 15px; padding: 10px 20px; font-size: 16px;
             background-color: #007bff; color: white; border-radius: 8px;
             text-decoration: none;
@@ -61,8 +71,7 @@
     <div id="ar-container" class="container hidden">
         <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-        
-        <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB" renderer="logarithmicDepthBuffer: true">
+        <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB">
             <a-assets>
                 <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
             </a-assets>
@@ -71,7 +80,6 @@
                 <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
             </a-entity>
         </a-scene>
-        
         <div id="ui-container">
             <a id="toggle-view-link" href="#">پخش تمام صفحه</a>
         </div>
@@ -95,25 +103,33 @@
                 arContainer.classList.add('hidden');
                 fullscreenPlayer.classList.remove('hidden');
 
-                const video = document.createElement('video');
-                video.src = './video.mp4';
-                video.controls = true; // نمایش کنترل‌های پیش‌فرض ویدیو
-                video.currentTime = videoTime;
-                video.play(); // پخش خودکار در این حالت معمولا کار می‌کند چون از صفحه قبل آمده‌ایم
+                const videoWrapper = document.createElement('div');
+                videoWrapper.id = 'video-wrapper';
                 
+                const playOverlay = document.createElement('div');
+                playOverlay.id = 'fs-play-button';
+
                 const backToArLink = document.createElement('a');
-                backToArLink.href = './index.html'; // لینک بازگشت به حالت AR (صفحه اصلی بدون پارامتر)
+                backToArLink.id = 'back-to-ar-link';
+                backToArLink.href = './index.html';
                 backToArLink.textContent = 'پخش AR';
                 
-                fullscreenPlayer.appendChild(video);
+                fullscreenPlayer.appendChild(videoWrapper);
+                videoWrapper.appendChild(playOverlay);
                 fullscreenPlayer.appendChild(backToArLink);
+
+                playOverlay.addEventListener('click', () => {
+                    playOverlay.classList.add('hidden');
+                    const video = document.createElement('video');
+                    video.src = './video.mp4';
+                    video.controls = true;
+                    video.currentTime = videoTime;
+                    video.play();
+                    videoWrapper.appendChild(video);
+                }, { once: true });
             } 
             // --- حالت دوم: حالت پیش‌فرض یعنی نمایش AR ---
             else {
-                splashScreen.classList.remove('hidden');
-                arContainer.classList.add('hidden');
-                fullscreenPlayer.classList.add('hidden');
-
                 const startButton = document.querySelector("#start-button");
                 const sceneEl = document.querySelector("#ar-scene");
                 const arVideo = document.querySelector("#ar-video");
@@ -148,7 +164,6 @@
                 toggleViewLink.addEventListener('click', (e) => {
                     e.preventDefault();
                     const currentTime = arVideo.currentTime;
-                    // رفتن به حالت تمام صفحه با رفرش کردن صفحه و ارسال پارامترها
                     window.location.href = `?mode=fullscreen&time=${currentTime}`;
                 });
             }
