@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تابلو زنده (نسخه مینیمال)</title>
+    <title>تابلو زنده (نسخه نهایی کامل)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -13,81 +13,71 @@
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('./zima.jpg');
-            background-size: cover;
-            background-position: center center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-size: cover; background-position: center center;
+            display: flex; justify-content: center; align-items: center;
             z-index: 3;
-            transition: opacity 0.5s ease-out;
+            transition: opacity 0.8s ease-out;
         }
-        
-        /* کانتینر برای متن و دکمه */
         #start-container {
-            text-align: center;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 30px;
-            border-radius: 20px;
+            text-align: center; color: white;
+            background-color: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 30px; border-radius: 20px;
             box-shadow: 0 5px 25px rgba(0,0,0,0.2);
         }
-        
-        #start-container p {
-            font-size: 18px;
-            margin: 0 0 20px 0;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-        }
-        
-        /* دکمه شروع جدید (دایره‌ای و مینیمال) */
+        #start-container p { font-size: 18px; margin: 0 0 20px 0; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
         #start-button {
-            width: 70px;
-            height: 70px;
+            width: 70px; height: 70px;
             background-color: rgba(255, 140, 0, 0.8);
             border: 2px solid rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border-radius: 50%; cursor: pointer; display: inline-flex;
+            justify-content: center; align-items: center;
             transition: transform 0.2s, background-color 0.2s;
         }
-        #start-button:hover {
-            transform: scale(1.1);
-            background-color: rgba(255, 140, 0, 1);
-        }
+        #start-button:hover { transform: scale(1.1); background-color: rgba(255, 140, 0, 1); }
+        #start-button svg { width: 50%; height: 50%; fill: white; margin-left: 5px; }
         
-        /* آیکون پخش (▶) داخل دکمه */
-        #start-button svg {
-            width: 50%;
-            height: 50%;
-            fill: white;
-            margin-left: 5px; /* برای مرکزیت بهتر آیکون */
+        /* --- سایر بخش‌های UI (بدون تغییر) --- */
+        #ui-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10003; pointer-events: none;
         }
-        
-        /* صحنه AR */
-        #ar-scene {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; z-index: 1;
+        #toggle-view-button {
+            pointer-events: auto; position: absolute; top: 20px; right: 20px;
+            padding: 8px 12px; font-size: 14px; font-weight: bold;
+            color: white; background-color: rgba(0, 0, 0, 0.6);
+            border: none; border-radius: 8px; cursor: pointer;
         }
+        #modal-player {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9); z-index: 10002;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #modal-player video { width: 95%; height: 95%; object-fit: contain; }
+        #ar-scene { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
     </style>
 </head>
-<body class="before-start">
+<body>
 
     <div id="splash-screen">
         <div id="start-container">
-            <p>قاب عکس را مقابل دوربین قرار دهید و برای شروع، دکمه را لمس کنید</p>
+            <p>برای شروع، دکمه را لمس کنید</p>
             <button id="start-button">
                 <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
         </div>
     </div>
     
-    <a-assets>
-        <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
-    </a-assets>
-    <a-scene id="ar-scene" class="hidden" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB">
+    <div id="ui-container" class="hidden">
+        <button id="toggle-view-button">پخش تمام صفحه</button>
+    </div>
+    
+    <div id="modal-player" class="hidden"></div>
+    
+    <a-scene id="ar-scene" class="hidden" mindar-image="imageTargetSrc: ./targets.mind; autoStart: false" vr-mode-ui="enabled: false" color-space="sRGB">
+        <a-assets>
+            <video id="ar-video" src="./video.mp4" loop playsinline webkit-playsinline></video>
+        </a-assets>
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
             <a-video id="ar-video-plane" src="#ar-video" rotation="0 0 0" position="0 0 0"></a-video>
@@ -95,7 +85,7 @@
     </a-scene>
 
     <script>
-        // --- تمام کدهای JavaScript بدون تغییر باقی مانده‌اند ---
+        // --- تمام منطق JavaScript از نسخه کامل و پایدار قبلی حفظ شده است ---
         document.addEventListener('DOMContentLoaded', () => {
             const startButton = document.querySelector("#start-button");
             const splashScreen = document.querySelector("#splash-screen");
@@ -103,6 +93,11 @@
             const arVideo = document.querySelector("#ar-video");
             const arVideoPlane = document.querySelector("#ar-video-plane");
             const targetEntity = document.querySelector("#target-entity");
+            const uiContainer = document.querySelector("#ui-container");
+            const toggleViewButton = document.querySelector("#toggle-view-button");
+            const modalPlayer = document.querySelector("#modal-player");
+
+            let isModalMode = false;
 
             arVideo.addEventListener('loadedmetadata', () => {
                 const w = arVideo.videoWidth;
@@ -115,22 +110,63 @@
                 setTimeout(() => {
                     splashScreen.classList.add('hidden');
                 }, 500);
-                
+
                 sceneEl.classList.remove('hidden');
                 sceneEl.systems['mindar-image-system'].start();
                 arVideo.muted = false;
-                arVideo.play();
-                arVideo.pause();
-                arVideo.currentTime = 0;
             });
 
             sceneEl.addEventListener("arReady", () => {
                 targetEntity.addEventListener("targetFound", () => {
                     arVideo.play();
+                    if (!isModalMode) {
+                        uiContainer.classList.remove('hidden');
+                    }
                 });
                 targetEntity.addEventListener("targetLost", () => {
                     arVideo.pause();
+                    if (!isModalMode) {
+                        uiContainer.classList.add('hidden');
+                    }
                 });
+            });
+
+            toggleViewButton.addEventListener('click', () => {
+                const currentTime = arVideo.currentTime;
+                
+                if (!isModalMode) { // رفتن به حالت مودال
+                    arVideo.pause();
+                    modalPlayer.classList.remove('hidden');
+                    
+                    const modalVideo = document.createElement('video');
+                    modalVideo.src = arVideo.src;
+                    modalVideo.currentTime = currentTime;
+                    modalVideo.controls = true;
+                    modalVideo.loop = true;
+                    modalVideo.autoplay = true;
+                    
+                    modalPlayer.innerHTML = '';
+                    modalPlayer.appendChild(modalVideo);
+                    
+                    toggleViewButton.textContent = "پخش AR";
+                    isModalMode = true;
+                } else { // بازگشت به حالت AR
+                    const modalVideo = modalPlayer.querySelector('video');
+                    if (modalVideo) {
+                        arVideo.currentTime = modalVideo.currentTime;
+                    }
+                    modalPlayer.innerHTML = '';
+                    modalPlayer.classList.add('hidden');
+                    
+                    if (targetEntity.getAttribute('mindar-image-target').visible) {
+                        arVideo.play();
+                    } else {
+                        uiContainer.classList.add('hidden');
+                    }
+                    
+                    toggleViewButton.textContent = "پخش تمام صفحه";
+                    isModalMode = false;
+                }
             });
         });
     </script>
